@@ -9,16 +9,24 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.firebase.client.Firebase;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
+
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class LoginActivity extends AppCompatActivity {
 
     Button login, newuser;
     EditText username_l, password_l;
-    FirebaseAuth firebaseAuth;
+    String url = "https://bakbak2-8b93b.firebaseio.com/ashwani.json";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,32 +37,46 @@ public class LoginActivity extends AppCompatActivity {
         newuser = findViewById(R.id.newuser);
         username_l = findViewById(R.id.username_l);
         password_l = findViewById(R.id.password_l);
-        firebaseAuth = FirebaseAuth.getInstance();
+        Firebase.setAndroidContext(this);
+
 
         newuser.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+                startActivity(intent);
             }
         });
 
         login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (username_l.getText().toString().equals("") || password_l.getText().toString().equals("")) {
-                    Toast.makeText(LoginActivity.this, "Please enter your Username and Password", Toast.LENGTH_SHORT).show();
-                } else {
-                    firebaseAuth.signInWithEmailAndPassword(username_l.getText().toString(), password_l.getText().toString()).addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<AuthResult> task) {
-                            if (task.isSuccessful()) {
-                                Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                                username_l.setText("");
-                                password_l.setText("");
+                StringRequest stringRequest = new StringRequest(0, url, new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Toast.makeText(LoginActivity.this, response, Toast.LENGTH_SHORT).show();
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            if (jsonObject.has(username_l.getText().toString())) {
+                                // here password object is inside username object therefore we can get object using username object we go inside
+                                // password by calling its key value
+                                JSONObject jsonObject1 = jsonObject.getJSONObject(username_l.getText().toString());
+                                if(jsonObject1.getString("password").equals(password_l.getText().toString()))
+                                Toast.makeText(LoginActivity.this, username_l.getText().toString()+"\n"+password_l.getText().toString(), Toast.LENGTH_SHORT).show();
                             }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
-                    });
-                }
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                    }
+                });
+                RequestQueue requestQueue = Volley.newRequestQueue(LoginActivity.this);
+                requestQueue.add(stringRequest);
+
             }
         });
 
